@@ -2,6 +2,7 @@
 @pyne
 """
 from pynecore import Persistent
+from pynecore.types import Series
 from pynecore.lib import (
     bar_index,
     barmerge,
@@ -54,10 +55,11 @@ def main(
         close[1],
         lookahead=barmerge.lookahead_on,
     )
+    htf_ema_series: Series[float] = ta.ema(close, ema_len)
     htf_ema = request.security(
         syminfo.tickerid,
         htf,
-        ta.ema(close, ema_len)[1],
+        htf_ema_series[1],
         lookahead=barmerge.lookahead_on,
     )
     htf_bull = htf_close > htf_ema
