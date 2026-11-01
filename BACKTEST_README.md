@@ -34,7 +34,7 @@ The original and A1 files on `main` have not been changed. All work described he
 
 The workflow downloads EURUSD M5 BID and ASK candles from Dukascopy for 2022-01-01 through 2026-11-01, aligns them, creates midpoint OHLC bars, builds H4 data from the same M5 series, and runs A2 and A3 with PyneCore.
 
-The spread summary is included in the artifact. The initial run uses 2 ticks of slippage and 0.01% commission per fill, matching the A2 source's declared assumptions. These are test assumptions; they must be checked against the actual broker. The midpoint feed plus fixed slippage is an approximation, not a full variable-spread tick simulation.
+The spread summary is included in the artifact. The runner explicitly disables PyneCore's bar magnifier and tick/fill recalculation so its execution settings match Pine's defaults. The initial run uses 2 ticks of slippage and 0.01% commission per fill, matching the A2 source's declared assumptions. These are test assumptions; they must be checked against the actual broker. The midpoint feed plus fixed slippage is an approximation, not a full variable-spread tick simulation.
 
 ## Start / rerun the workflow
 
