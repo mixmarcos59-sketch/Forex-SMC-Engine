@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: forex-smc-a2-a3-backtest
+  group: forex-smc-a2-a3-backtest-reuse-dataset
   cancel-in-progress: true
 
 permissions:
