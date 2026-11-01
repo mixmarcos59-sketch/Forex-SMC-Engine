@@ -1,8 +1,8 @@
 # Forex SMC Engine — A2/A3 external backtest results
 
 **Status:** completed external PyneCore run; not approved for live/prop use  
-**GitHub Actions run:** [#15](https://github.com/mixmarcos59-sketch/Forex-SMC-Engine/actions/runs/41325510258)  
-**Run conclusion:** success  
+**GitHub Actions runs:** [#15](https://github.com/mixmarcos59-sketch/Forex-SMC-Engine/actions/runs/41325510258) (base cost scenario) and [#16](https://github.com/mixmarcos59-sketch/Forex-SMC-Engine/actions/runs/41326529665) (zero-commission sensitivity)  
+**Run conclusions:** both success  
 **Artifact:** `forex-smc-a2-a3-eurusd-m5-2022-present`
 
 ## Test setup
@@ -40,6 +40,25 @@ All amounts below are USD on a USD 10,000 initial-equity simulation. Win rate is
 | Raw BOS, no filters (diagnostic only) | 12,237 | 29.35% | 0.624 | -$287.11 (-2.87%) | $287.28 (2.87%) |
 
 A3 paid USD 9,071.21 in commissions under the configured 0.01%-per-fill assumption. Its nominal risk sizing uses stop-price distance and does not add expected commission/slippage to the quantity calculation; the realized loss at a stop can therefore exceed the nominal risk percentage.
+
+## Zero-commission sensitivity
+
+A second complete run used the same data, initial capital, H4 feed, and 2-tick slippage, but set the separate commission to 0. This is an additional scenario, not a full variable-spread replay.
+
+| Variant | Closed trades | Win rate | Profit factor | Net P&L | Max drawdown |
+|---|---:|---:|---:|---:|---:|
+| A2, zero commission | 1,556 | 32.39% | 0.904 | -$15.61 (-0.16%) | $22.16 (0.22%) |
+| A3, zero commission, nominal 1% stop risk | 1,663 | 31.99% | 0.930 | -$6,190.40 (-61.90%) | $9,055.10 (71.39% of peak equity) |
+
+The zero-commission A3 result is materially less bad than the base-cost result, but it is still deeply negative. The system's negative outcome therefore cannot be explained by the separate commission assumption alone.
+
+### Broker-cost context
+
+ActivTrades' Help Center currently states that it does not charge a separate commission on most products, including Forex, and that spread is the transaction cost. Its spread guidance says major FX spreads start at an average of 0.5 pips and vary with market conditions. These statements may not apply to every entity/account/instrument; confirm the exact contract in the user's platform:
+- [ActivTrades — commissions](https://help.activtrades.com/hc/activtrades-help-center/articles/1760105545-deposits-what-trading-commissions-do-you-charge)
+- [ActivTrades — spreads](https://help.activtrades.com/hc/activtrades-help-center/articles/1760341130-trading-conditions-what-spreads-do-you-offer)
+
+The zero-commission scenario keeps 2 ticks of slippage on each fill. For the EURUSD feed's 0.00001 tick size this is 0.2 pip per fill, or approximately 0.4 pip round turn. That is a rough proxy near the measured Dukascopy close-spread mean of 0.4783 pips, **not** an exact ActivTrades spread model: the feed is Dukascopy midpoint data, the spread is variable, and a fixed slippage value cannot reproduce spread widening or the broker's precise execution.
 
 ## Interpretation
 
