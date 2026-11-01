@@ -1,6 +1,11 @@
 name: Forex SMC A2 and A3 external backtests
 
 on:
+  push:
+    branches:
+      - a2-audit-backtest
+    paths:
+      - backtest/run-trigger.txt
   workflow_dispatch:
 
 concurrency:
