@@ -20,7 +20,7 @@ from pynecore.lib import (
 
 
 @script.strategy(
-    Forex SMC diagnostic — score 50 without HTF gate,
+    "Forex SMC diagnostic — score 50 without HTF gate",
     overlay=True,
     pyramiding=0,
     initial_capital=10000,
