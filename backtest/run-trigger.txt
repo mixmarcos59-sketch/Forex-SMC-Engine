@@ -1,1 +1,2 @@
 Start the controlled A2/A3 validation run after the workflow was installed on main.
+Run raw BOS diagnostic after first zero-trade result.
