@@ -71,6 +71,15 @@ jobs:
       - name: Run raw BOS diagnostic without filters
         run: pyne run backtest/forex_smc_engine_debug_raw_bos.py data/EURUSD_5m_mid.ohlcv --security "240=EURUSD_240"
 
+      - name: Run BOS diagnostic with HTF gate only
+        run: pyne run backtest/forex_smc_engine_debug_htf_only.py data/EURUSD_5m_mid.ohlcv --security "240=EURUSD_240"
+
+      - name: Run score 50 diagnostic without HTF gate
+        run: pyne run backtest/forex_smc_engine_debug_score_no_htf_gate.py data/EURUSD_5m_mid.ohlcv --security "240=EURUSD_240"
+
+      - name: Run score 35 diagnostic without HTF gate
+        run: pyne run backtest/forex_smc_engine_debug_score35_no_htf_gate.py data/EURUSD_5m_mid.ohlcv --security "240=EURUSD_240"
+
       - name: List generated reports
         run: find . -type f \( -name '*_strat.csv' -o -name '*_trade.csv' \) -print
 
