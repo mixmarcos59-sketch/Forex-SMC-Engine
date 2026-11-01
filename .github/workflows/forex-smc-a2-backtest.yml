@@ -1,4 +1,4 @@
-name: Forex SMC A2 external baseline
+name: Forex SMC A2 and A3 external backtests
 
 on:
   push:
@@ -13,6 +13,8 @@ jobs:
   eurusd-m5-backtest:
     runs-on: ubuntu-latest
     timeout-minutes: 180
+    env:
+      PYNE_WORK_DIR: ${{ github.workspace }}
     steps:
       - name: Checkout research branch
         uses: actions/checkout@v4
@@ -55,16 +57,24 @@ jobs:
         run: pyne data aggregate data/EURUSD_5m_mid.ohlcv --timeframe 240 --output data/EURUSD_240.ohlcv
 
       - name: Run A2 baseline port
-        run: |
-          pyne run backtest/forex_smc_engine_a2_pyne.py data/EURUSD_5m_mid.ohlcv --security "240=EURUSD_240"
-          echo "---- generated reports ----"
-          find . -type f \( -name '*_strat.csv' -o -name '*_trade.csv' \) -print
+        run: pyne run backtest/forex_smc_engine_a2_pyne.py data/EURUSD_5m_mid.ohlcv --security "240=EURUSD_240"
 
-      - name: Upload OHLCV metadata and backtest outputs
+      - name: Run A3 risk-sized candidate port
+        run: pyne run backtest/forex_smc_engine_a3_pyne.py data/EURUSD_5m_mid.ohlcv --security "240=EURUSD_240"
+
+      - name: List generated reports
+        run: find . -type f \( -name '*_strat.csv' -o -name '*_trade.csv' \) -print
+
+      - name: Upload reproducible data and backtest outputs
         uses: actions/upload-artifact@v4
         with:
-          name: forex-smc-a2-eurusd-m5-2022-present
+          name: forex-smc-a2-a3-eurusd-m5-2022-present
           path: |
+            data/EURUSD_5m_bid.csv
+            data/EURUSD_5m_ask.csv
+            data/EURUSD_5m_mid.csv
+            data/EURUSD_5m_mid.ohlcv
+            data/EURUSD_240.ohlcv
             data/EURUSD_spread_summary.json
             data/*.toml
             **/*_strat.csv
