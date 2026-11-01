@@ -30,6 +30,10 @@ from pynecore.lib import (
     commission_value=0.01,
     slippage=2,
     process_orders_on_close=False,
+    calc_on_order_fills=False,
+    calc_on_every_tick=False,
+    calc_on_every_history_tick=False,
+    use_bar_magnifier=False,
 )
 def main(
     swing_len: int = 4,
