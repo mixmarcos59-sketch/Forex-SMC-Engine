@@ -1,1 +1,1 @@
-Retry isolated diagnostic scripts after fixing strategy title string syntax.
+Re-run A2/A3 and diagnostics after Series-typed HTF EMA fix.
