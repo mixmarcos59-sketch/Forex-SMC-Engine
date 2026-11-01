@@ -105,13 +105,14 @@ PyneCore's strategy decorator defaults `use_bar_magnifier=True`, while Pine stra
 
 ## Final external backtest status — 2026-11-01
 
-Run [#15](https://github.com/mixmarcos59-sketch/Forex-SMC-Engine/actions/runs/41325510258) completed successfully after the HTF EMA correction. The early zero-trade runs were invalid because the PyneCore security process raised `TypeError: 'float' object is not subscriptable` while indexing the direct `ta.ema()` return value. The external port now declares the EMA as `Series[float]` before reading its previous value. Run #15 logs contain no recurrence of that error.
+Runs [#15](https://github.com/mixmarcos59-sketch/Forex-SMC-Engine/actions/runs/41325510258) and [#16](https://github.com/mixmarcos59-sketch/Forex-SMC-Engine/actions/runs/41326529665) completed successfully after the HTF EMA correction. Run #16 also completed the zero-commission sensitivity. The early zero-trade runs were invalid because the PyneCore security process raised `TypeError: 'float' object is not subscriptable` while indexing the direct `ta.ema()` return value. The external port now declares the EMA as `Series[float]` before reading its previous value. Run #15 logs contain no recurrence of that error.
 
 The corrected run did produce trades, but the test result is negative:
 - A2: 1,556 closed trades, 32.39% wins, profit factor 0.746, net -USD 46.45, max drawdown USD 48.13.
 - A3: 1,646 closed trades, 31.77% wins, profit factor 0.730, net -USD 9,910.97 (-99.11%), max drawdown USD 9,913.82 (99.14%).
-- A3 commissions under the configured assumption totaled USD 9,071.21.
+- A3 commissions under the configured 0.01%-per-fill assumption totaled USD 9,071.21.
+- In the zero-commission sensitivity, A2 returned -USD 15.61 (PF 0.904); A3 returned -USD 6,190.40 (-61.90%) with a 0.930 profit factor and 71.39% maximum drawdown from peak equity. The separate commission assumption worsens the outcome, but removing it does not make A3 profitable.
 
 These figures are external-engine results under the documented EURUSD M5 midpoint feed, 0.01%-per-fill commission and 2-tick slippage. They are not broker-calibrated or TradingView-parity results. A2 uses 1% of equity as notional exposure, not 1% stop risk, so its small dollar drawdown is not directly comparable with A3. A3's nominal stop-risk sizing does not include estimated fees/slippage in the quantity calculation, so realized stop loss can exceed the nominal risk percentage.
 
-Additional score/H4/raw-BOS diagnostics are recorded in [A2_A3_backtest_results_2026-11-01.md](A2_A3_backtest_results_2026-11-01.md). All tested variants had profit factor below 1. The current system is **not approved for live or prop deployment**. The next required work is to review the entry/exit logic and calibrate costs, then compile and compare the actual Pine source in TradingView.
+Additional score/H4/raw-BOS diagnostics and the zero-commission sensitivity are recorded in [A2_A3_backtest_results_2026-11-01.md](A2_A3_backtest_results_2026-11-01.md). All tested variants had profit factor below 1. The current system is **not approved for live or prop deployment**. The next required work is to review the entry/exit logic and calibrate costs, then compile and compare the actual Pine source in TradingView.
