@@ -79,3 +79,20 @@ Preferred research route: PyneCore's Apache-2.0 Python runtime, with a hand-writ
 - Execution: next-bar market entry, 2-tick baseline slippage only as an initial comparison, and separately calibrated commission/spread sensitivity.
 - Report: closed trades, net P&L, profit factor, win rate, max drawdown, average win/loss, exposure, long/short split, and full trade list. No optimization until a baseline is reproducible.
 
+
+
+## A3 correction candidate (not yet compiled)
+
+A separate candidate was added at `candidate/Forex_SMC_Engine_v0_1_A3_riesgo_alertas.pine`. It does not overwrite A2.
+
+Changes in A3:
+- Replaces 1%-of-equity notional sizing with a position quantity calculated from the rounded stop distance, `strategy.equity`, and a configurable `riskPct` (default 1.0%).
+- Converts per-unit stop risk into the strategy account currency with `strategy.convert_to_account()`.
+- Rounds quantity down to a configurable broker quantity step; defaults are 1,000 base units minimum and 1,000-unit steps (0.01 standard FX lot). These defaults must be checked against the actual broker/prop symbol contract.
+- Adds a maximum stop distance of 5 ATR; signals with a larger stop are skipped instead of allowing an unbounded structural stop.
+- Removes `alertcondition()` from the strategy and uses `alert()` for signal events plus `alert_message` for order-fill alerts.
+- Sets margin_long / margin_short to 1% (100:1) as a backtest capacity assumption. This is not a claim about the user's broker; it must be changed to match the actual account leverage.
+
+The position-risk calculation is based on the same tick distance that is passed to `strategy.exit(loss=..., profit=...)`, so the planned stop risk per unit is internally consistent. Actual realized loss can still exceed the planned amount because of gaps, slippage, commissions, and spread. The max-stop threshold, risk percentage, quantity step, and margin assumption are parameters to validate—not optimized performance claims.
+
+The A3 Pine file and its PyneCore port are still **uncompiled/unexecuted** until the GitHub Actions run completes and the original Pine source is checked in TradingView. The PyneCore port is a hand-written parallel implementation, not a compiler proof for the Pine file.
