@@ -32,19 +32,19 @@ The original and A1 files on `main` have not been changed. All work described he
 
 ## External test
 
-The workflow downloads EURUSD M5 BID and ASK candles from Dukascopy for 2022-01-01 through 2026-11-01, aligns them, creates midpoint OHLC bars, builds H4 data from the same M5 series, and runs A2 and A3 with PyneCore.
+The workflow initially obtains EURUSD M5 BID and ASK candles from Dukascopy for 2022-01-01 through 2026-11-01, aligns them, creates midpoint OHLC bars, and uses H4 context data. Later diagnostic runs reuse the verified data artifact instead of downloading the history again.
 
-The spread summary is included in the artifact. The runner explicitly disables PyneCore's bar magnifier and tick/fill recalculation so its execution settings match Pine's defaults. The initial run uses 2 ticks of slippage and 0.01% commission per fill, matching the A2 source's declared assumptions. These are test assumptions; they must be checked against the actual broker. The midpoint feed plus fixed slippage is an approximation, not a full variable-spread tick simulation.
+The spread summary is included in the artifact. The runner disables PyneCore's bar magnifier and tick/fill recalculation to match Pine's default strategy settings. The test uses 2 ticks of slippage and 0.01% commission per fill. These are provisional assumptions and are not calibrated to a specific broker. Midpoint OHLC plus fixed slippage is an approximation, not full variable-spread tick replay.
 
-## Start / rerun the workflow
+## Latest completed run
 
-1. Open the repository on GitHub.
-2. Select the **Actions** tab.
-3. Select **Forex SMC A2 and A3 external backtests**.
-4. Tap **Run workflow** and choose branch `a2-audit-backtest`.
-5. When it finishes, open the run's **Artifacts** section and download `forex-smc-a2-a3-eurusd-m5-2022-present`.
+Run [#15](https://github.com/mixmarcos59-sketch/Forex-SMC-Engine/actions/runs/41325510258) completed successfully after fixing the PyneCore H4 EMA series handling. Results and limitations are documented in [audit/A2_A3_backtest_results_2026-11-01.md](audit/A2_A3_backtest_results_2026-11-01.md).
 
-The workflow is manual-only now to avoid launching duplicate historical downloads on every code commit.
+The important outcome is negative: A2 and A3 both lose money under this test setup; A3's nominal 1% stop-risk candidate has a near-total simulated drawdown. Lowering the score threshold to 35 increases trade count but worsens profit factor. Do not use the current candidate on a live or prop account.
+ 
+## Trigger / rerun the workflow
+
+The workflow runs automatically when `backtest/run-trigger.txt` is updated on branch `a2-audit-backtest`. It also supports manual `workflow_dispatch`, but you do not need to press anything in GitHub for the normal research trigger.
 
 ## Important validation boundary
 
