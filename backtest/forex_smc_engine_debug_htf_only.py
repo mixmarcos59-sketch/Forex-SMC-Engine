@@ -20,7 +20,7 @@ from pynecore.lib import (
 
 
 @script.strategy(
-    Forex SMC diagnostic — BOS with HTF gate only,
+    "Forex SMC diagnostic — BOS with HTF gate only",
     overlay=True,
     pyramiding=0,
     initial_capital=10000,
