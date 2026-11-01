@@ -1,0 +1,88 @@
+name: Forex SMC A2 and A3 external backtests
+
+on:
+  push:
+    branches:
+      - a2-audit-backtest
+    paths:
+      - backtest/run-trigger.txt
+  workflow_dispatch:
+
+concurrency:
+  group: forex-smc-a2-a3-backtest
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  eurusd-m5-backtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      PYNE_WORK_DIR: ${{ github.workspace }}
+    steps:
+      - name: Checkout research branch
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Download EURUSD M5 BID history
+        run: |
+          npx --yes dukascopy-node@1.51.1 -i eurusd -from 2022-01-01 -to 2026-11-01 -t m5 -f csv -v -p bid
+          mkdir -p data
+          BID_FILE="$(find download -type f -name 'eurusd-m5-bid-*.csv' | head -n 1)"
+          test -n "$BID_FILE"
+          cp "$BID_FILE" data/EURUSD_5m_bid.csv
+
+      - name: Download EURUSD M5 ASK history
+        run: |
+          npx --yes dukascopy-node@1.51.1 -i eurusd -from 2022-01-01 -to 2026-11-01 -t m5 -f csv -v -p ask
+          ASK_FILE="$(find download -type f -name 'eurusd-m5-ask-*.csv' | head -n 1)"
+          test -n "$ASK_FILE"
+          cp "$ASK_FILE" data/EURUSD_5m_ask.csv
+
+      - name: Build midpoint feed and measure spread
+        run: python backtest/prepare_eurusd_data.py
+
+      - name: Install PyneCore
+        run: python -m pip install --upgrade pip && python -m pip install "pynesys-pynecore[cli]"
+
+      - name: Convert M5 CSV to PyneCore OHLCV
+        run: pyne data convert-from data/EURUSD_5m_mid.csv --symbol EURUSD --provider dukascopy --timezone UTC
+
+      - name: Build H4 context feed
+        run: pyne data aggregate data/EURUSD_5m_mid.ohlcv --timeframe 240 --output data/EURUSD_240.ohlcv
+
+      - name: Run A2 baseline port
+        run: pyne run backtest/forex_smc_engine_a2_pyne.py data/EURUSD_5m_mid.ohlcv --security "240=EURUSD_240"
+
+      - name: Run A3 risk-sized candidate port
+        run: pyne run backtest/forex_smc_engine_a3_pyne.py data/EURUSD_5m_mid.ohlcv --security "240=EURUSD_240"
+
+      - name: List generated reports
+        run: find . -type f \( -name '*_strat.csv' -o -name '*_trade.csv' \) -print
+
+      - name: Upload reproducible data and backtest outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: forex-smc-a2-a3-eurusd-m5-2022-present
+          path: |
+            data/EURUSD_5m_bid.csv
+            data/EURUSD_5m_ask.csv
+            data/EURUSD_5m_mid.csv
+            data/EURUSD_5m_mid.ohlcv
+            data/EURUSD_240.ohlcv
+            data/EURUSD_spread_summary.json
+            data/*.toml
+            **/*_strat.csv
+            **/*_trade.csv
+          if-no-files-found: error
