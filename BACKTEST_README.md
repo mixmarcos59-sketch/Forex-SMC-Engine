@@ -38,9 +38,9 @@ The spread summary is included in the artifact. The runner disables PyneCore's b
 
 ## Latest completed run
 
-Run [#15](https://github.com/mixmarcos59-sketch/Forex-SMC-Engine/actions/runs/41325510258) completed successfully after fixing the PyneCore H4 EMA series handling. Results and limitations are documented in [audit/A2_A3_backtest_results_2026-11-01.md](audit/A2_A3_backtest_results_2026-11-01.md).
+Runs [#15](https://github.com/mixmarcos59-sketch/Forex-SMC-Engine/actions/runs/41325510258) and [#16](https://github.com/mixmarcos59-sketch/Forex-SMC-Engine/actions/runs/41326529665) completed successfully after fixing the PyneCore H4 EMA series handling. Run #16 adds A2/A3 zero-commission variants. Results and limitations are documented in [audit/A2_A3_backtest_results_2026-11-01.md](audit/A2_A3_backtest_results_2026-11-01.md).
 
-The important outcome is negative: A2 and A3 both lose money under this test setup; A3's nominal 1% stop-risk candidate has a near-total simulated drawdown. Lowering the score threshold to 35 increases trade count but worsens profit factor. Do not use the current candidate on a live or prop account.
+The important outcome is negative even without separate commission: A3 with nominal 1% stop risk loses 61.90% and has a 0.930 profit factor. The test is not a complete variable-spread model, but it shows that removing commission does not make the current strategy profitable. Lowering the score threshold to 35 increases trade count and worsens profit factor. Do not use the current candidate on a live or prop account.
  
 ## Trigger / rerun the workflow
 
