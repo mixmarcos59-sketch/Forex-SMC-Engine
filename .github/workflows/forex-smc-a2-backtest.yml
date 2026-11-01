@@ -68,6 +68,9 @@ jobs:
       - name: Run A3 risk-sized candidate port
         run: pyne run backtest/forex_smc_engine_a3_pyne.py data/EURUSD_5m_mid.ohlcv --security "240=EURUSD_240"
 
+      - name: Run raw BOS diagnostic without filters
+        run: pyne run backtest/forex_smc_engine_debug_raw_bos.py data/EURUSD_5m_mid.ohlcv --security "240=EURUSD_240"
+
       - name: List generated reports
         run: find . -type f \( -name '*_strat.csv' -o -name '*_trade.csv' \) -print
 
