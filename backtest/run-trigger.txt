@@ -1,1 +1,1 @@
-Re-run A2/A3 and diagnostics after Series-typed HTF EMA fix.
+Run a second cost scenario with zero FX commission and 2-tick slippage proxy.
