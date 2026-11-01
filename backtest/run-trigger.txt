@@ -1,0 +1,1 @@
+Single controlled trigger for the latest A2/A3 PyneCore validation run. The workflow path filter prevents other commits from launching duplicate downloads.
