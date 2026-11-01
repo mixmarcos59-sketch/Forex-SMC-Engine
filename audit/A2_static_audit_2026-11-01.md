@@ -95,9 +95,23 @@ Changes in A3:
 
 The position-risk calculation is based on the same tick distance that is passed to `strategy.exit(loss=..., profit=...)`, so the planned stop risk per unit is internally consistent. Actual realized loss can still exceed the planned amount because of gaps, slippage, commissions, and spread. The max-stop threshold, risk percentage, quantity step, and margin assumption are parameters to validate—not optimized performance claims.
 
-The A3 Pine file and its PyneCore port are still **uncompiled/unexecuted** until the GitHub Actions run completes and the original Pine source is checked in TradingView. The PyneCore port is a hand-written parallel implementation, not a compiler proof for the Pine file.
+The A3 Pine file remains **uncompiled in TradingView**. Its hand-written PyneCore port has now been executed in GitHub Actions run [#15](https://github.com/mixmarcos59-sketch/Forex-SMC-Engine/actions/runs/41325510258). A successful PyneCore run does not prove that the Pine source compiles; the two implementations must still be compared against TradingView.
 
 
 ## External-engine execution parity check
 
 PyneCore's strategy decorator defaults `use_bar_magnifier=True`, while Pine strategies default to bar magnifier off unless explicitly enabled. The A2 and A3 PyneCore ports have therefore been updated to set `use_bar_magnifier=False` and explicitly disable recalculation-on-fill / every-tick options to match the Pine declarations. Any Actions run started before this correction is a pipeline smoke test only and must not be used for final TradingView parity or performance conclusions.
+
+
+## Final external backtest status — 2026-11-01
+
+Run [#15](https://github.com/mixmarcos59-sketch/Forex-SMC-Engine/actions/runs/41325510258) completed successfully after the HTF EMA correction. The early zero-trade runs were invalid because the PyneCore security process raised `TypeError: 'float' object is not subscriptable` while indexing the direct `ta.ema()` return value. The external port now declares the EMA as `Series[float]` before reading its previous value. Run #15 logs contain no recurrence of that error.
+
+The corrected run did produce trades, but the test result is negative:
+- A2: 1,556 closed trades, 32.39% wins, profit factor 0.746, net -USD 46.45, max drawdown USD 48.13.
+- A3: 1,646 closed trades, 31.77% wins, profit factor 0.730, net -USD 9,910.97 (-99.11%), max drawdown USD 9,913.82 (99.14%).
+- A3 commissions under the configured assumption totaled USD 9,071.21.
+
+These figures are external-engine results under the documented EURUSD M5 midpoint feed, 0.01%-per-fill commission and 2-tick slippage. They are not broker-calibrated or TradingView-parity results. A2 uses 1% of equity as notional exposure, not 1% stop risk, so its small dollar drawdown is not directly comparable with A3. A3's nominal stop-risk sizing does not include estimated fees/slippage in the quantity calculation, so realized stop loss can exceed the nominal risk percentage.
+
+Additional score/H4/raw-BOS diagnostics are recorded in [A2_A3_backtest_results_2026-11-01.md](A2_A3_backtest_results_2026-11-01.md). All tested variants had profit factor below 1. The current system is **not approved for live or prop deployment**. The next required work is to review the entry/exit logic and calibrate costs, then compile and compare the actual Pine source in TradingView.
