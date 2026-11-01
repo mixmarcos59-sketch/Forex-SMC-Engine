@@ -1,0 +1,445 @@
+//@version=6
+strategy("Forex SMC Engine v0.1",
+     overlay=true,
+     pyramiding=0,
+     initial_capital=10000,
+     default_qty_type=strategy.percent_of_equity,
+     default_qty_value=1,
+     commission_type=strategy.commission.percent,
+     commission_value=0.01,
+     slippage=2,
+     process_orders_on_close=false,
+     max_labels_count=300,
+     max_boxes_count=100)
+
+//==================================================
+// 01. CONFIGURACION
+//==================================================
+
+groupStructure = "01 - Estructura"
+
+swingLen = input.int(4, "Velas para confirmar swing",
+     minval=2, group=groupStructure)
+
+atrLen = input.int(14, "Periodo ATR",
+     minval=2, group=groupStructure)
+
+groupHTF = "02 - Tendencia superior"
+
+htf = input.timeframe("240", "Temporalidad superior",
+     group=groupHTF)
+
+useHTF = input.bool(true, "Filtrar por tendencia HTF",
+     group=groupHTF)
+
+emaLen = input.int(50, "Periodo EMA HTF",
+     minval=2, group=groupHTF)
+
+groupSignals = "03 - Senales"
+
+minScore = input.int(50, "Puntaje minimo",
+     minval=0, maxval=75, group=groupSignals)
+
+dispMult = input.float(0.8, "Cuerpo minimo x ATR",
+     minval=0.1, step=0.1, group=groupSignals)
+
+groupRisk = "04 - Gestion de riesgo"
+
+rr = input.float(2.0, "Objetivo riesgo/beneficio",
+     minval=0.5, step=0.25, group=groupRisk)
+
+stopATR = input.float(1.5, "Stop minimo x ATR",
+     minval=0.5, step=0.25, group=groupRisk)
+
+groupVisual = "05 - Visualizacion"
+
+showSwings = input.bool(true, "Mostrar HH/HL/LH/LL",
+     group=groupVisual)
+
+showFVG = input.bool(true, "Mostrar FVG",
+     group=groupVisual)
+
+showSignals = input.bool(true, "Mostrar LONG/SHORT",
+     group=groupVisual)
+
+//==================================================
+// 02. TENDENCIA HTF Y VOLATILIDAD
+//==================================================
+
+atr = ta.atr(atrLen)
+
+htfClose = request.security(
+     syminfo.tickerid,
+     htf,
+     close[1],
+     lookahead=barmerge.lookahead_on)
+
+htfEMA = request.security(
+     syminfo.tickerid,
+     htf,
+     ta.ema(close, emaLen)[1],
+     lookahead=barmerge.lookahead_on)
+
+htfBull = htfClose > htfEMA
+htfBear = htfClose < htfEMA
+
+//==================================================
+// 03. ESTRUCTURA: HH, HL, LH Y LL
+//==================================================
+
+pivotHigh = ta.pivothigh(high, swingLen, swingLen)
+pivotLow = ta.pivotlow(low, swingLen, swingLen)
+
+var float lastHigh = na
+var float previousHigh = na
+
+var float lastLow = na
+var float previousLow = na
+
+var bool highBroken = false
+var bool lowBroken = false
+
+if not na(pivotHigh)
+    previousHigh := lastHigh
+    lastHigh := pivotHigh
+    highBroken := false
+
+    if showSwings
+        string highType = na(previousHigh) ? "SH" :
+             pivotHigh > previousHigh ? "HH" :
+             pivotHigh < previousHigh ? "LH" : "EQH"
+
+        label.new(
+             bar_index - swingLen,
+             pivotHigh,
+             highType,
+             style=label.style_label_down,
+             color=color.red,
+             textcolor=color.white,
+             size=size.tiny)
+
+if not na(pivotLow)
+    previousLow := lastLow
+    lastLow := pivotLow
+    lowBroken := false
+
+    if showSwings
+        string lowType = na(previousLow) ? "SL" :
+             pivotLow > previousLow ? "HL" :
+             pivotLow < previousLow ? "LL" : "EQL"
+
+        label.new(
+             bar_index - swingLen,
+             pivotLow,
+             lowType,
+             style=label.style_label_up,
+             color=color.green,
+             textcolor=color.white,
+             size=size.tiny)
+
+//==================================================
+// 04. BOS Y CHoCH
+//==================================================
+
+var int marketTrend = 0
+
+bullBreak = barstate.isconfirmed and
+     not na(lastHigh) and
+     not highBroken and
+     close > lastHigh and
+     close[1] <= lastHigh
+
+bearBreak = barstate.isconfirmed and
+     not na(lastLow) and
+     not lowBroken and
+     close < lastLow and
+     close[1] >= lastLow
+
+// Guardar la tendencia previa al quiebre para que el puntaje
+// no use la tendencia que la propia ruptura acaba de establecer.
+trendBeforeBreak = marketTrend
+
+bullChoch = bullBreak and trendBeforeBreak == -1
+bearChoch = bearBreak and trendBeforeBreak == 1
+
+if bullBreak
+    highBroken := true
+    marketTrend := 1
+
+if bearBreak
+    lowBroken := true
+    marketTrend := -1
+
+if bullBreak
+    label.new(
+         bar_index, low,
+         bullChoch ? "CHoCH ↑" : "BOS ↑",
+         style=label.style_label_up,
+         color=bullChoch ? color.aqua : color.green,
+         textcolor=color.black,
+         size=size.small)
+
+if bearBreak
+    label.new(
+         bar_index, high,
+         bearChoch ? "CHoCH ↓" : "BOS ↓",
+         style=label.style_label_down,
+         color=bearChoch ? color.orange : color.red,
+         textcolor=color.white,
+         size=size.small)
+
+//==================================================
+// 05. FAIR VALUE GAPS
+//==================================================
+
+bullFVG = barstate.isconfirmed and
+     bar_index >= 2 and low > high[2]
+
+bearFVG = barstate.isconfirmed and
+     bar_index >= 2 and high < low[2]
+
+var float bullTop = na
+var float bullBottom = na
+
+var float bearTop = na
+var float bearBottom = na
+
+var box bullBox = na
+var box bearBox = na
+
+if bullFVG
+    bullTop := low
+    bullBottom := high[2]
+
+    if showFVG
+        if not na(bullBox)
+            box.delete(bullBox)
+
+        bullBox := box.new(
+             bar_index - 2,
+             bullTop,
+             bar_index + 1,
+             bullBottom,
+             border_color=color.new(color.green, 35),
+             bgcolor=color.new(color.green, 88),
+             extend=extend.right)
+
+if bearFVG
+    bearTop := low[2]
+    bearBottom := high
+
+    if showFVG
+        if not na(bearBox)
+            box.delete(bearBox)
+
+        bearBox := box.new(
+             bar_index - 2,
+             bearTop,
+             bar_index + 1,
+             bearBottom,
+             border_color=color.new(color.red, 35),
+             bgcolor=color.new(color.red, 88),
+             extend=extend.right)
+
+// Invalidacion al atravesar la zona completa.
+
+if not na(bullBottom) and low <= bullBottom
+    bullTop := na
+    bullBottom := na
+
+    if not na(bullBox)
+        box.delete(bullBox)
+        bullBox := na
+
+if not na(bearTop) and high >= bearTop
+    bearTop := na
+    bearBottom := na
+
+    if not na(bearBox)
+        box.delete(bearBox)
+        bearBox := na
+
+inBullFVG = not na(bullTop) and
+     low <= bullTop and close >= bullBottom
+
+inBearFVG = not na(bearBottom) and
+     high >= bearBottom and close <= bearTop
+
+//==================================================
+// 06. DESPLAZAMIENTO
+//==================================================
+
+body = math.abs(close - open)
+
+bullDisplacement = close > open and
+     body >= atr * dispMult
+
+bearDisplacement = close < open and
+     body >= atr * dispMult
+
+//==================================================
+// 07. PUNTAJE DE CONFLUENCIA
+//==================================================
+
+// Puntaje basado en confluencias independientes.
+// El BOS/CHoCH es el disparador de entrada, no suma puntos.
+// Se excluye el FVG creado en esta misma vela.
+longScore =
+     (htfBull ? 25 : 0) +
+     (trendBeforeBreak == 1 ? 20 : 0) +
+     (inBullFVG and not bullFVG ? 15 : 0) +
+     (bullDisplacement ? 15 : 0)
+
+shortScore =
+     (htfBear ? 25 : 0) +
+     (trendBeforeBreak == -1 ? 20 : 0) +
+     (inBearFVG and not bearFVG ? 15 : 0) +
+     (bearDisplacement ? 15 : 0)
+
+longAllowed = not useHTF or htfBull
+shortAllowed = not useHTF or htfBear
+
+longSignal = barstate.isconfirmed and
+     bullBreak and
+     longScore >= minScore and
+     longAllowed
+
+shortSignal = barstate.isconfirmed and
+     bearBreak and
+     shortScore >= minScore and
+     shortAllowed
+
+//==================================================
+// 08. ENTRADAS Y GESTION DE RIESGO
+//==================================================
+
+var float longSL = na
+var float longTP = na
+
+var float shortSL = na
+var float shortTP = na
+
+// A2: distancias en ticks fijadas en la senal y aplicadas al precio de
+// fill real mediante loss/profit relativos de strategy.exit.
+// El TP se calcula desde los ticks de riesgo ya redondeados.
+var int longSLTicks = na
+var int longTPTicks = na
+var int shortSLTicks = na
+var int shortTPTicks = na
+
+if longSignal and strategy.position_size <= 0
+    float candidateSL = na(lastLow) ?
+         close - atr * stopATR :
+         math.min(lastLow, close - atr * stopATR)
+
+    float riskDist = close - candidateSL
+    longSLTicks := math.max(1, math.round(riskDist / syminfo.mintick))
+    longTPTicks := math.max(1, math.round(longSLTicks * rr))
+
+    shortSL := na
+    shortTP := na
+    shortSLTicks := na
+    shortTPTicks := na
+
+    strategy.entry("LONG", strategy.long)
+    strategy.exit(
+         "LONG EXIT",
+         from_entry="LONG",
+         loss=longSLTicks,
+         profit=longTPTicks)
+
+if shortSignal and strategy.position_size >= 0
+    float candidateSL = na(lastHigh) ?
+         close + atr * stopATR :
+         math.max(lastHigh, close + atr * stopATR)
+
+    float riskDist = candidateSL - close
+    shortSLTicks := math.max(1, math.round(riskDist / syminfo.mintick))
+    shortTPTicks := math.max(1, math.round(shortSLTicks * rr))
+
+    longSL := na
+    longTP := na
+    longSLTicks := na
+    longTPTicks := na
+
+    strategy.entry("SHORT", strategy.short)
+    strategy.exit(
+         "SHORT EXIT",
+         from_entry="SHORT",
+         loss=shortSLTicks,
+         profit=shortTPTicks)
+
+// Niveles para el grafico, calculados desde el precio de entrada real.
+if strategy.position_size > 0 and not na(longSLTicks)
+    longSL := strategy.position_avg_price - longSLTicks * syminfo.mintick
+    longTP := strategy.position_avg_price + longTPTicks * syminfo.mintick
+
+if strategy.position_size < 0 and not na(shortSLTicks)
+    shortSL := strategy.position_avg_price + shortSLTicks * syminfo.mintick
+    shortTP := strategy.position_avg_price - shortTPTicks * syminfo.mintick
+
+if strategy.position_size == 0 and
+     strategy.position_size[1] != 0
+
+    longSL := na
+    longTP := na
+    shortSL := na
+    shortTP := na
+
+//==================================================
+// 09. VISUALIZACION
+//==================================================
+
+plot(lastHigh, "Ultimo swing high",
+     color=color.new(color.red, 55),
+     style=plot.style_stepline)
+
+plot(lastLow, "Ultimo swing low",
+     color=color.new(color.green, 55),
+     style=plot.style_stepline)
+
+plot(strategy.position_size > 0 ? longSL : na,
+     "Stop LONG", color=color.red,
+     style=plot.style_linebr)
+
+plot(strategy.position_size > 0 ? longTP : na,
+     "Objetivo LONG", color=color.green,
+     style=plot.style_linebr)
+
+plot(strategy.position_size < 0 ? shortSL : na,
+     "Stop SHORT", color=color.red,
+     style=plot.style_linebr)
+
+plot(strategy.position_size < 0 ? shortTP : na,
+     "Objetivo SHORT", color=color.green,
+     style=plot.style_linebr)
+
+plotshape(showSignals and longSignal,
+     title="Entrada LONG",
+     text="LONG",
+     style=shape.triangleup,
+     location=location.belowbar,
+     color=color.lime,
+     textcolor=color.black,
+     size=size.small)
+
+plotshape(showSignals and shortSignal,
+     title="Entrada SHORT",
+     text="SHORT",
+     style=shape.triangledown,
+     location=location.abovebar,
+     color=color.fuchsia,
+     textcolor=color.white,
+     size=size.small)
+
+//==================================================
+// 10. ALERTAS
+//==================================================
+
+alertcondition(longSignal,
+     title="Forex LONG",
+     message="Senal LONG en {{ticker}} - {{interval}}")
+
+alertcondition(shortSignal,
+     title="Forex SHORT",
+     message="Senal SHORT en {{ticker}} - {{interval}}")
