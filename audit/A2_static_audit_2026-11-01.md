@@ -96,3 +96,8 @@ Changes in A3:
 The position-risk calculation is based on the same tick distance that is passed to `strategy.exit(loss=..., profit=...)`, so the planned stop risk per unit is internally consistent. Actual realized loss can still exceed the planned amount because of gaps, slippage, commissions, and spread. The max-stop threshold, risk percentage, quantity step, and margin assumption are parameters to validate—not optimized performance claims.
 
 The A3 Pine file and its PyneCore port are still **uncompiled/unexecuted** until the GitHub Actions run completes and the original Pine source is checked in TradingView. The PyneCore port is a hand-written parallel implementation, not a compiler proof for the Pine file.
+
+
+## External-engine execution parity check
+
+PyneCore's strategy decorator defaults `use_bar_magnifier=True`, while Pine strategies default to bar magnifier off unless explicitly enabled. The A2 and A3 PyneCore ports have therefore been updated to set `use_bar_magnifier=False` and explicitly disable recalculation-on-fill / every-tick options to match the Pine declarations. Any Actions run started before this correction is a pipeline smoke test only and must not be used for final TradingView parity or performance conclusions.
