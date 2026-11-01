@@ -1,1 +1,1 @@
-Run isolated diagnostic variants after the baseline A2/A3 zero-trade result.
+Reuse validated run-10 EURUSD data for isolated BOS/HTF/score diagnostics.
