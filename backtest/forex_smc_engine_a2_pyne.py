@@ -183,7 +183,7 @@ def main(
             else math.min(last_low, close - atr * stop_atr)
         )
         risk_dist = close - candidate_sl
-        long_sl_ticks = max(1, round(risk_dist / syminfo.mintick))
+        long_sl_ticks = max(1, math.round(risk_dist / syminfo.mintick))
         long_tp_ticks = max(1, round(long_sl_ticks * rr))
 
         short_sl_ticks = -1
@@ -204,7 +204,7 @@ def main(
             else math.max(last_high, close + atr * stop_atr)
         )
         risk_dist = candidate_sl - close
-        short_sl_ticks = max(1, round(risk_dist / syminfo.mintick))
+        short_sl_ticks = max(1, math.round(risk_dist / syminfo.mintick))
         short_tp_ticks = max(1, round(short_sl_ticks * rr))
 
         long_sl_ticks = -1
