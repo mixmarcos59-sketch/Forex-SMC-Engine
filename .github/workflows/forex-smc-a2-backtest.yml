@@ -54,6 +54,12 @@ jobs:
       - name: Run A3 risk-sized candidate port
         run: pyne run backtest/forex_smc_engine_a3_pyne.py data/EURUSD_5m_mid.ohlcv --security "240=EURUSD_240"
 
+      - name: Run A2 zero-commission cost sensitivity
+        run: pyne run backtest/forex_smc_engine_a2_pyne_zero_commission.py data/EURUSD_5m_mid.ohlcv --security "240=EURUSD_240"
+
+      - name: Run A3 zero-commission cost sensitivity
+        run: pyne run backtest/forex_smc_engine_a3_pyne_zero_commission.py data/EURUSD_5m_mid.ohlcv --security "240=EURUSD_240"
+
       - name: Run raw BOS diagnostic without filters
         run: pyne run backtest/forex_smc_engine_debug_raw_bos.py data/EURUSD_5m_mid.ohlcv --security "240=EURUSD_240"
 
